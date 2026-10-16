@@ -103,9 +103,85 @@ PCBuilderProject_NET8/
 
 `LoginForm` gọi `AuthRepository.Login`. Nếu hợp lệ, ứng dụng mở `MainForm` với `AppUser`. `RegisterForm` kiểm tra trường bắt buộc, độ dài mật khẩu và xác nhận mật khẩu rồi gọi `RegisterUser`. Role được đặt thành `User` ở tầng repository.
 
-### Tra cứu và quản trị linh kiện
+### Tra cứu và quản trị linh kiện (CRUD Components)
 
-`ComponentsForm` tải danh mục/hãng, lọc theo từ khóa và danh mục. Với người dùng Admin, các nút thêm/sửa/ngừng kinh doanh được hiển thị. `ComponentEditForm` thu thập các trường model, SKU, giá, tồn kho, danh mục, hãng và trạng thái, sau đó gọi `ComponentRepository.Save`.
+Phần quản lý linh kiện đã có đủ luồng **Create, Read, Update và Delete theo kiểu ngừng kinh doanh (soft delete)**. Chức năng thêm/sửa/ngừng kinh doanh chỉ được mở khi tài khoản hiện tại có role `Admin` và màn hình được mở ở chế độ quản trị.
+
+#### 1. Read — xem và tìm kiếm
+
+- Form: `Forms/ComponentsForm.cs`.
+- Repository: `Data/ComponentRepository.cs`, phương thức `Search(keyword, categoryId, includeInactive)`.
+- Stored procedure: `dbo.sp_Component_Search`.
+- Người dùng có thể nhập từ khóa rồi bấm **Tìm kiếm** và lọc theo danh mục. Từ khóa được tìm trong tên model, SKU, tên hãng và tên danh mục.
+- Chế độ tra cứu thông thường chỉ hiển thị linh kiện đang hoạt động (`IsActive = 1`). Chế độ quản trị truyền `includeInactive = true` để xem cả linh kiện đã ngừng kinh doanh.
+- Các cột kỹ thuật dùng nội bộ để kiểm tra tương thích được ẩn khỏi bảng; việc ẩn cột không xóa dữ liệu trong database.
+
+#### 2. Create — thêm linh kiện
+
+1. Đăng nhập bằng tài khoản Admin.
+2. Mở **Quản lý linh kiện** ở thanh điều hướng.
+3. Bấm **Thêm**, điền danh mục, hãng, tên model, SKU (nếu có), giá và số lượng tồn kho.
+4. Bấm **Lưu**.
+
+`ComponentsForm.AddClick()` mở `ComponentEditForm` với `ComponentID = 0`. Khi lưu, `ComponentEditForm.Save()` tạo `ComponentItem` và gọi `ComponentRepository.Save()`. Repository nhận diện ID bằng 0 và gọi `dbo.sp_Component_Create`; SQL Server tự sinh `ComponentID`.
+
+#### 3. Update — sửa linh kiện
+
+1. Chọn một dòng trong bảng.
+2. Bấm **Sửa**.
+3. Thay đổi thông tin rồi bấm **Lưu**.
+
+`ComponentsForm.EditClick()` truyền linh kiện đang chọn vào `ComponentEditForm`. Form điền các giá trị hiện tại vào control. Khi lưu, `ComponentRepository.Save()` thấy `ComponentID != 0` nên gọi `dbo.sp_Component_Update`, cập nhật danh mục, hãng, model, SKU, giá, tồn kho và trạng thái `IsActive`.
+
+#### 4. Delete — ngừng kinh doanh, không xóa vật lý
+
+1. Chọn linh kiện trong bảng quản trị.
+2. Bấm **Ngừng kinh doanh** (nút trong giao diện có thể mang nhãn ngắn là **Xóa**).
+3. Xác nhận hộp thoại.
+
+`ComponentsForm.DeleteClick()` gọi `ComponentRepository.Delete(id)`, sau đó repository chạy `dbo.sp_Component_Delete`. Stored procedure chỉ đặt `IsActive = 0` và cập nhật `UpdatedAt`; bản ghi không bị xóa vật lý. Cách này giữ lịch sử cấu hình đã lưu và tránh làm hỏng khóa ngoại. Linh kiện ngừng kinh doanh sẽ không xuất hiện trong danh sách thông thường, nhưng vẫn có thể xem trong chế độ quản trị.
+
+#### Các lớp và stored procedure liên quan
+
+| Thành phần | Trách nhiệm |
+|---|---|
+| `ComponentsForm.cs` | Tải bảng, tìm kiếm, chọn dòng, mở form thêm/sửa, xác nhận ngừng kinh doanh |
+| `ComponentsForm.Designer.cs` | Bố cục bảng, bộ lọc và các nút thao tác |
+| `ComponentEditForm.cs` | Đổ dữ liệu lên form, kiểm tra các trường bắt buộc và xử lý lưu |
+| `ComponentEditForm.Designer.cs` | Các control nhập thông tin linh kiện |
+| `ComponentRepository.Search()` | Đọc danh sách và lọc linh kiện |
+| `ComponentRepository.Save()` | Chọn stored procedure tạo mới hay cập nhật dựa trên `ComponentID` |
+| `ComponentRepository.Delete()` | Gọi stored procedure ngừng kinh doanh |
+| `sp_Component_Search` | Truy vấn danh sách, từ khóa, danh mục và trạng thái hoạt động |
+| `sp_Component_Create` | Thêm bản ghi linh kiện |
+| `sp_Component_Update` | Cập nhật bản ghi linh kiện |
+| `sp_Component_Delete` | Đặt `IsActive = 0`, không xóa vật lý |
+
+**Giới hạn của form hiện tại:** form quản lý mới cho phép sửa các trường chung gồm danh mục, hãng, model, SKU, giá, tồn kho và trạng thái. `Description`, `ImageURL` và thông số chuyên biệt trong các bảng như `CPU_Specs`, `GPU_Specs`, `RAM_Specs` chưa được chỉnh sửa từ form này. `ComponentRepository.Save()` hiện truyền `NULL` cho `Description` và `ImageURL`; không dùng form hiện tại để sửa các trường đó nếu cần bảo toàn giá trị đang có. Muốn quản trị đầy đủ các thông số này cần bổ sung control và cập nhật repository riêng.
+
+### Quản lý tài khoản (Users) — phạm vi hiện có
+
+**Lưu ý quan trọng: source hiện tại chưa có màn hình CRUD người dùng dành cho Admin.** README ghi rõ phạm vi thực tế để tránh nhầm với chức năng đã được triển khai.
+
+- **Create — có:** `RegisterForm.cs` kiểm tra thông tin bắt buộc, mật khẩu tối thiểu 8 ký tự và xác nhận mật khẩu, rồi gọi `AuthRepository.RegisterUser()`. Repository tạo hash mật khẩu bằng PBKDF2-SHA256 (210.000 vòng lặp, salt ngẫu nhiên) và gọi `dbo.sp_User_Create`. Role được gán cố định là `User`, vì vậy không thể tự đăng ký thành Admin. Username và email trùng sẽ được báo lỗi.
+- **Read — có giới hạn:** `AuthRepository.Login()` gọi `dbo.sp_User_GetForLogin` để tìm một tài khoản theo username và chỉ lấy tài khoản có `IsActive = 1`. Đây là tra cứu phục vụ đăng nhập, **không phải** danh sách quản trị tất cả người dùng.
+- **Update — chưa có giao diện/logic:** chưa có form hoặc repository method để Admin sửa họ tên, email, role hay trạng thái tài khoản.
+- **Delete/Deactivate — chưa có giao diện/logic:** chưa có chức năng khóa/ngừng hoạt động hoặc xóa tài khoản từ ứng dụng. Bảng `Users` có cột `IsActive`, nhưng điều đó không đồng nghĩa UI đã triển khai thao tác này.
+
+Các file liên quan đến phần tài khoản hiện có:
+
+| File/thành phần | Vai trò |
+|---|---|
+| `Forms/RegisterForm.cs` | Kiểm tra dữ liệu đăng ký và thông báo kết quả |
+| `Forms/RegisterForm.Designer.cs` | Giao diện đăng ký |
+| `Forms/LoginForm.cs` | Nhận username/password và gọi xác thực |
+| `Data/AuthRepository.cs` | `Login()` và `RegisterUser()` |
+| `PasswordHash.Create()` / `Verify()` | Tạo và xác minh hash mật khẩu |
+| `dbo.sp_User_Create` | Thêm tài khoản vào `Users` |
+| `dbo.sp_User_GetForLogin` | Tìm tài khoản đang hoạt động theo username |
+| `Models/AppUser.cs` | Dữ liệu tài khoản hiện đăng nhập và kiểm tra role Admin/User |
+
+Nếu yêu cầu bài tập là **CRUD User đầy đủ**, cần phát triển thêm một màn hình quản trị người dùng và các phương thức repository/stored procedure cho danh sách, cập nhật và khóa tài khoản. Phần mở rộng đó chưa được đưa vào bản source này; database hiện có không bị thay đổi bởi phần hướng dẫn này.
 
 ### Build PC
 
