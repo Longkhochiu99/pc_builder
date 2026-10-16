@@ -1,0 +1,9 @@
+namespace PCBuilder.Forms;
+partial class ComponentsForm
+{
+    private System.ComponentModel.IContainer? components; private TextBox _search=null!; private ComboBox _category=null!; private DataGridView _grid=null!; private Button _btnAdd=null!,_btnEdit=null!,_btnDelete=null!;
+
+    private FlowLayoutPanel top=null!; private Button btnSearch=null!;
+    private void InitializeComponent(){components=new System.ComponentModel.Container();_search=new TextBox();_category=new ComboBox();_grid=new DataGridView();_btnAdd=new Button();_btnEdit=new Button();_btnDelete=new Button();top=new FlowLayoutPanel();btnSearch=new Button();((System.ComponentModel.ISupportInitialize)_grid).BeginInit();SuspendLayout();Text="Danh mục linh kiện";Dock=DockStyle.Fill;BackColor=UiTheme.Background;_search.Width=220;_search.PlaceholderText="Tên linh kiện / hãng / SKU";_category.Width=180;_category.DropDownStyle=ComboBoxStyle.DropDownList;top.Dock=DockStyle.Top;top.Height=48;top.WrapContents=false;top.Padding=new Padding(0,4,0,4);btnSearch.Text="Tìm kiếm";btnSearch.Width=90;btnSearch.Click+=SearchClick;_btnAdd.Text="Thêm";_btnAdd.Width=75;_btnAdd.Click+=AddClick;_btnEdit.Text="Sửa";_btnEdit.Width=75;_btnEdit.Click+=EditClick;_btnDelete.Text="Ngừng kinh doanh";_btnDelete.Width=140;_btnDelete.Click+=DeleteClick;top.Controls.AddRange(new Control[]{_search,_category,btnSearch,_btnAdd,_btnEdit,_btnDelete});_grid.Dock=DockStyle.Fill;_grid.ReadOnly=true;_grid.AllowUserToAddRows=false;_grid.AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill;_grid.SelectionMode=DataGridViewSelectionMode.FullRowSelect;_grid.MultiSelect=false;Controls.Add(_grid);Controls.Add(top);((System.ComponentModel.ISupportInitialize)_grid).EndInit();ResumeLayout(false);}
+    protected override void Dispose(bool disposing){if(disposing)components?.Dispose();base.Dispose(disposing);}
+}

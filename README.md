@@ -1,74 +1,139 @@
-# PC Builder — C# WinForms + SQL Server Express (.NET 8)
+# PC Builder — WinForms .NET 8 + SQL Server
 
-Ứng dụng desktop quản lý linh kiện, tạo cấu hình PC, kiểm tra một số điều kiện tương thích, lưu cấu hình, đăng nhập/phân quyền và wizard chẩn đoán. Có thuật toán gợi ý cấu hình theo ngân sách dùng beam search và điểm benchmark có nguồn.
+Phiên bản này chuyển giao diện chính của các Form sang cấu trúc WinForms Designer chuẩn để có thể chỉnh sửa bằng Visual Studio 2022. Database và các lớp nghiệp vụ hiện có được giữ nguyên.
 
-## Yêu cầu
-- Windows 10/11
-- Visual Studio 2022 với workload **.NET desktop development**
-- .NET 8 SDK
-- SQL Server Express + SQL Server Management Studio (SSMS)
+## 1. Yêu cầu
 
-## Cài đặt database
-Trong SSMS, chạy lần lượt:
-1. `Database/01_CreateDatabase.sql` — tạo `PCBuilderDB` và các bảng.
-2. `Database/02_StoredProcedures.sql` — Stored Procedures.
-3. `Database/03_DemoData.sql` — dữ liệu minh họa.
+- Windows 10/11.
+- Visual Studio 2022 với workload **.NET desktop development**.
+- .NET 8 SDK/Windows Desktop Runtime phù hợp.
+- SQL Server Express đang chạy, mặc định là `localhost\\SQLEXPRESS`.
+- Database `PCBuilderDB` và các stored procedure đã được tạo theo bộ script trong thư mục `Database`.
 
-Dữ liệu demo và điểm benchmark demo chỉ để thử giao diện/thuật toán; không phải giá thị trường hoặc kết quả benchmark đo thực. Hãy xác minh thông số và nhập benchmark có nguồn trước khi dùng để tư vấn mua linh kiện.
+## 2. Mở và chạy project
 
-## Kết nối SQL Server Express
-Mặc định trong `PCBuilder.WinForms/appsettings.json`:
-```json
-{
-  "ConnectionStrings": {
-    "PCBuilderDB": "Server=localhost\\SQLEXPRESS;Database=PCBuilderDB;Integrated Security=True;TrustServerCertificate=True;Encrypt=True;"
-  }
-}
+1. Giải nén toàn bộ ZIP vào thư mục bình thường, không chạy trực tiếp trong ZIP.
+2. Mở `PCBuilderProject.sln` bằng Visual Studio 2022.
+3. Trong Solution Explorer, nhấp phải project `PCBuilder.WinForms` → **Set as Startup Project**.
+4. Mở `PCBuilder.WinForms/appsettings.json` và kiểm tra connection string. Mặc định:
+
+   ```json
+   {
+     "ConnectionStrings": {
+       "PCBuilderDB": "Server=localhost\\\\SQLEXPRESS;Database=PCBuilderDB;Integrated Security=True;TrustServerCertificate=True;Encrypt=True;"
+     }
+   }
+   ```
+
+   Trong file JSON thực tế, dấu `\\` được escape như trên. Nếu SQL Server instance hoặc tên database của bạn khác, chỉ sửa giá trị connection string; không cần thay đổi schema.
+5. Chọn cấu hình `Debug` và `Any CPU`, sau đó nhấn **F5**.
+6. Đăng nhập bằng tài khoản đã có trong database. Đăng ký công khai luôn tạo role `User`; không dùng chức năng đăng ký để tạo Admin.
+
+## 3. Mở WinForms Designer
+
+Trong **Solution Explorer**, mở `PCBuilder.WinForms > Forms`. Các cặp file giao diện/logic gồm:
+
+| Form | File Designer | Mục đích |
+|---|---|---|
+| Đăng nhập | `LoginForm.Designer.cs` | Đăng nhập và mở màn hình đăng ký |
+| Đăng ký | `RegisterForm.Designer.cs` | Tạo tài khoản User |
+| Màn hình chính | `MainForm.Designer.cs` | Khung sidebar, tiêu đề trang và vùng nội dung |
+| Danh mục linh kiện | `ComponentsForm.Designer.cs` | Tìm kiếm, lọc và bảng linh kiện |
+| Thêm/sửa linh kiện | `ComponentEditForm.Designer.cs` | Biểu mẫu chỉnh sửa thông tin linh kiện |
+| Build PC | `BuildForm.Designer.cs` | Danh mục, cấu hình đang chọn, ngân sách và kết quả |
+| Chẩn đoán | `TroubleshootingForm.Designer.cs` | Câu hỏi, câu trả lời và vùng kết luận |
+
+Để chỉnh sửa trực quan:
+
+1. Mở file `.cs` tương ứng trong Solution Explorer.
+2. Nhấp phải file `.cs` (ví dụ `BuildForm.cs`) → **View Designer**. Có thể dùng `Shift+F7` khi đang mở file code.
+3. Chọn control trong Designer hoặc Document Outline, thay đổi thuộc tính trong cửa sổ **Properties**.
+4. Đặt tên control trong thuộc tính **(Name)**. Các control đã được dùng trong logic có tên bắt đầu bằng `_`, ví dụ `_search`, `_grid`, `_budget`; không đổi tên chúng nếu chưa cập nhật code-behind.
+5. Lưu file và build lại.
+
+**Lưu ý về các phần tạo động:** sidebar trong `MainForm` được nạp theo quyền User/Admin; thẻ tổng quan được tạo trong code; các nút lựa chọn trong `TroubleshootingForm` được tạo theo cây câu hỏi. Các phần này thay đổi theo dữ liệu/quyền nên vẫn được dựng bằng code, trong khi khung Form và các control nền có thể chỉnh sửa trong Designer. Hộp thoại nhập tên cấu hình nhỏ trong `BuildForm` cũng được tạo động.
+
+## 4. Cấu trúc source
+
+```text
+PCBuilderProject_NET8/
+├── PCBuilderProject.sln
+├── Database/
+│   ├── 01_CreateDatabase.sql
+│   ├── 02_StoredProcedures.sql
+│   └── 03_DemoData.sql
+└── PCBuilder.WinForms/
+    ├── Program.cs
+    ├── appsettings.json
+    ├── Data/
+    │   ├── Db.cs
+    │   ├── AuthRepository.cs
+    │   ├── ComponentRepository.cs
+    │   └── BuildRepository.cs
+    ├── Models/
+    │   ├── AppUser.cs
+    │   └── ComponentItem.cs
+    ├── Services/
+    │   ├── CompatibilityService.cs
+    │   ├── RecommendationService.cs
+    │   └── TroubleshootingService.cs
+    └── Forms/
+        ├── *Form.cs              # sự kiện và logic giao diện
+        ├── *Form.Designer.cs     # khởi tạo control, layout và thuộc tính
+        └── UiTheme.cs            # màu sắc/style dùng chung
 ```
-Nếu instance của bạn có tên khác, hãy đổi `Server=...`. Ví dụ instance mặc định có thể là `localhost` hoặc `localhost\SQLEXPRESS`. Tài khoản Windows phải có quyền truy cập database.
 
-## Mở và chạy
-1. Mở `PCBuilderProject.sln`.
-2. Kiểm tra `PCBuilder.WinForms` Target Framework là `net8.0-windows`.
-3. Restore NuGet packages và đặt `PCBuilder.WinForms` làm Startup Project.
-4. Chạy (F5). Khi chưa có Admin, dùng chức năng **Tạo Admin đầu tiên** trên màn hình đăng nhập.
+### Vai trò các lớp
 
+- `Program.cs`: điểm khởi chạy ứng dụng, mở `LoginForm`.
+- `Db.cs`: tạo kết nối SQL Server theo cấu hình.
+- `AuthRepository.cs`: đăng nhập, xác thực mật khẩu và đăng ký tài khoản User.
+- `ComponentRepository.cs`: tìm kiếm, đọc, thêm, sửa và ngừng kinh doanh linh kiện; tải danh mục/hãng.
+- `BuildRepository.cs`: lưu cấu hình PC và các linh kiện thuộc cấu hình trong transaction.
+- `AppUser.cs`: thông tin người dùng và quyền Admin/User.
+- `ComponentItem.cs`: mô hình dữ liệu linh kiện.
+- `CompatibilityService.cs`: kiểm tra tương thích phần cứng và ước lượng giới hạn cấu hình dựa trên dữ liệu có sẵn.
+- `RecommendationService.cs`: tạo/xếp hạng gợi ý cấu hình theo ngân sách và mục đích.
+- `TroubleshootingService.cs`: cây câu hỏi chẩn đoán sự cố.
+- `UiTheme.cs`: style dùng chung cho form, nút, bảng và textbox.
 
-## Các tính năng chính trong ứng dụng
-1. **Đăng nhập và phân quyền:** tài khoản Admin đã tồn tại đăng nhập như bình thường; User chỉ có quyền sử dụng chức năng dành cho người dùng.
-2. **Đăng ký User:** form đăng ký riêng thu thập username, họ tên, email và mật khẩu. Vai trò được gán cố định ở tầng repository là `User`; không cho tự chọn Admin. Mật khẩu lưu dạng PBKDF2 hash.
-3. **Dashboard:** trang tổng quan có điều hướng đến các công cụ chính.
-4. **Tra cứu linh kiện:** lọc theo danh mục và tìm theo tên/hãng/SKU; Admin có thêm/sửa/ngừng kinh doanh.
-5. **Build PC:** thêm/bỏ linh kiện, xem tổng giá, kiểm tra tương thích, lưu cấu hình cá nhân.
-6. **Gợi ý theo ngân sách:** chọn mục đích Gaming, Lập trình/Đồ họa hoặc Cân bằng; engine xếp hạng các tổ hợp từ dữ liệu benchmark hiện có.
-7. **Troubleshooting Wizard:** trả lời từng câu hỏi để nhận hướng chẩn đoán ban đầu.
-8. **Giao diện:** sidebar tối, dashboard sáng, thẻ tính năng, màu sắc thống nhất cho bảng, nút và trường nhập liệu; không cần thư viện UI bên ngoài.
+## 5. Luồng chức năng
 
-## Gợi ý cấu hình
-- Chọn mục đích: Gaming, Lập trình/Đồ họa hoặc Cân bằng.
-- Nhập ngân sách bằng VND.
-- Engine sinh tổ hợp theo các nhóm CPU, Mainboard, RAM, GPU, PSU, Storage và Case; lọc socket, loại RAM, chiều dài GPU và mức dự phòng PSU; sau đó xếp hạng theo benchmark và hiệu năng/giá.
-- Tối đa 18 ứng viên mỗi nhóm và beam width 250 để giới hạn số tổ hợp.
-- Engine hiện yêu cầu đủ 7 nhóm linh kiện và dữ liệu kỹ thuật cần thiết để kiểm tra tương thích. Cooling chưa bắt buộc trong tổ hợp nền tảng.
+### Đăng nhập/đăng ký
 
-## Thêm benchmark có nguồn
-Bảng `dbo.BenchmarkScores` có các trường `ComponentID`, `MetricCode`, `BenchmarkName`, `Score`, `SourceName`, `SourceUrl`, `IsVerified`. Các metric hiện được truy vấn gồm `CPU_MULTI`, `CPU_SINGLE`, `GPU_GAMING`, `GPU_PRODUCTIVITY`. Không trộn điểm từ các bài benchmark khác thang đo. Để có so sánh hợp lệ, hãy thống nhất benchmark/metric giữa các linh kiện cùng loại. Các điểm demo được đánh dấu `IsVerified=0`.
+`LoginForm` gọi `AuthRepository.Login`. Nếu hợp lệ, ứng dụng mở `MainForm` với `AppUser`. `RegisterForm` kiểm tra trường bắt buộc, độ dài mật khẩu và xác nhận mật khẩu rồi gọi `RegisterUser`. Role được đặt thành `User` ở tầng repository.
 
-## Kiến trúc
-- `Forms`: Presentation Layer (WinForms).
-- `Services`: Business Logic, tương thích, gợi ý, troubleshooting.
-- `Data`: ADO.NET repositories, parameterized SQL / Stored Procedures.
-- `Models`: model dữ liệu.
-- `Database`: schema, stored procedures và demo data.
+### Tra cứu và quản trị linh kiện
 
-## Giới hạn hiện tại
-- Điểm bottleneck không phải benchmark game thực tế; TDP không đại diện cho hiệu năng.
-- Kiểm tra tương thích chỉ áp dụng các điều kiện có dữ liệu: socket, DDR, GPU-case, PSU. Cần bổ sung BIOS CPU support, clearance radiator/cooler, đầu cấp nguồn GPU, lane/M.2 và kích thước PSU để đạt độ bao phủ cao hơn.
-- Giá và tồn kho demo là dữ liệu minh họa.
-- Đây là MVP học tập; cần kiểm thử trên máy Windows + SQL Server Express trước khi nộp/triển khai.
+`ComponentsForm` tải danh mục/hãng, lọc theo từ khóa và danh mục. Với người dùng Admin, các nút thêm/sửa/ngừng kinh doanh được hiển thị. `ComponentEditForm` thu thập các trường model, SKU, giá, tồn kho, danh mục, hãng và trạng thái, sau đó gọi `ComponentRepository.Save`.
 
+### Build PC
 
-## Giao diện và đăng ký tài khoản
-- Giao diện dùng bộ màu tối cho sidebar, nền sáng, thẻ dashboard và bảng dữ liệu được định dạng lại bằng WinForms thuần; không cần thư viện giao diện trả phí.
-- Màn hình Login không còn nút tạo Admin. Người dùng mới đăng ký qua form riêng và `AuthRepository.RegisterUser` luôn truyền `UserRole = User`.
-- Quyền Admin vẫn lấy từ database; không có trường cho người dùng tự chọn vai trò khi đăng ký.
+`BuildForm` cho phép tìm linh kiện, thêm/bỏ linh kiện, xem tổng giá, kiểm tra tương thích, gợi ý cấu hình theo ngân sách/mục đích và lưu cấu hình. `CompatibilityService` kiểm tra các thông tin tương thích có trong database. Điểm hiệu năng/giá trong `RecommendationService` phụ thuộc chất lượng dữ liệu benchmark; dữ liệu demo không phải benchmark độc lập đã xác minh.
+
+### Chẩn đoán sự cố
+
+`TroubleshootingForm` hiển thị từng câu hỏi từ `TroubleshootingService`, giữ lịch sử để quay lại và trình bày kết luận/hướng khắc phục khi tới nút cuối của cây.
+
+## 6. Database — không tạo lại nếu đã có
+
+Nếu database `PCBuilderDB` đã tồn tại và ứng dụng hiện kết nối được, **không chạy lại** script tạo database hoặc demo data chỉ vì chuyển giao diện. Thư mục `Database` được giữ lại để tham khảo/cài đặt trên môi trường mới. Tránh chạy `03_DemoData.sql` nhiều lần nếu chưa kiểm tra các ràng buộc duy nhất và dữ liệu hiện có.
+
+Nếu gặp lỗi kết nối:
+
+1. Mở SQL Server Configuration Manager/Services và kiểm tra instance `SQLEXPRESS` đang chạy.
+2. Trong SSMS, xác nhận server name là `localhost\\SQLEXPRESS` (hoặc thay đúng instance của máy bạn).
+3. Xác nhận Windows account chạy ứng dụng có quyền truy cập `PCBuilderDB`.
+4. Kiểm tra stored procedures mà các repository gọi đã tồn tại.
+
+## 7. Build và xử lý lỗi
+
+- Chọn **Build → Rebuild Solution**.
+- Nếu thiếu target framework, cài .NET 8 SDK và workload **.NET desktop development**.
+- Nếu Visual Studio báo designer bị lỗi, xem **Error List** và **Output → Windows Forms Designer**; kiểm tra constructor design-time của Form không thực hiện truy vấn DB.
+- Không viết truy vấn SQL hoặc logic nghiệp vụ vào file `.Designer.cs`. Hãy đặt logic trong file `.cs` tương ứng.
+- Không chỉnh sửa trực tiếp phần `InitializeComponent()` bằng code khi đang mở Designer nếu có thể chỉnh qua cửa sổ Properties; Designer có thể ghi đè các thay đổi thủ công.
+
+## 8. Giới hạn kiểm thử của gói này
+
+Source đã được chuyển sang cấu trúc partial class với các file `.Designer.cs` và có constructor không truy cập database dành cho Designer. Môi trường tạo gói hiện tại không có Windows/.NET SDK để chạy build WinForms, vì vậy vẫn cần mở bằng Visual Studio 2022 trên Windows và thực hiện **Rebuild Solution** trước khi sử dụng. Không coi việc đóng gói ZIP là bằng chứng đã chạy kiểm thử trên Windows.

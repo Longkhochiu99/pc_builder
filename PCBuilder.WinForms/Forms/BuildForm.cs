@@ -1,33 +1,12 @@
-using PCBuilder.Data;
-using PCBuilder.Models;
-using PCBuilder.Services;
-
+using PCBuilder.Data; using PCBuilder.Models; using PCBuilder.Services;
 namespace PCBuilder.Forms;
-
-public sealed class BuildForm : Form
+public sealed partial class BuildForm : Form
 {
-    private readonly ComponentRepository _repo = new(); private readonly CompatibilityService _compat = new(); private readonly AppUser _user; private readonly TextBox _budget = new() { Width = 130, PlaceholderText = "Ngân sách VND" };
-    private readonly ComboBox _purpose = new() { Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly RecommendationService _recommendation = new();
-    private readonly DataGridView _catalog = new() { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, SelectionMode = DataGridViewSelectionMode.FullRowSelect };
-    private readonly DataGridView _selected = new() { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, SelectionMode = DataGridViewSelectionMode.FullRowSelect };
-    private readonly List<ComponentItem> _build = new(); private readonly Label _total = new() { AutoSize = true, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
-    private readonly TextBox _search = new() { Width = 220, PlaceholderText = "Tìm linh kiện" };
-    private readonly RichTextBox _results = new() { Dock = DockStyle.Fill, ReadOnly = true };
-    public BuildForm(AppUser user)
-    {
-        _user = user; Dock = DockStyle.Fill;
-        var searchPanel = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 44 }; searchPanel.Controls.Add(_search); var search = new Button { Text = "Tìm", Width = 70 }; search.Click += (_, _) => LoadCatalog(); searchPanel.Controls.Add(search);
-        var add = new Button { Text = "Thêm linh kiện đã chọn", Width = 180 }; add.Click += (_, _) => AddSelected(); searchPanel.Controls.Add(add);
-        var remove = new Button { Text = "Bỏ khỏi cấu hình", Width = 140 }; remove.Click += (_, _) => RemoveSelected(); searchPanel.Controls.Add(remove);
-        var check = new Button { Text = "Kiểm tra tương thích", Width = 160 }; check.Click += (_, _) => Check(); searchPanel.Controls.Add(check);
-        searchPanel.Controls.Add(_budget); _purpose.Items.AddRange(new object[] { "Gaming", "Lập trình/Đồ họa", "Cân bằng" }); _purpose.SelectedIndex = 0; searchPanel.Controls.Add(_purpose); var recommend = new Button { Text = "Gợi ý ngân sách", Width = 130 }; recommend.Click += (_, _) => Recommend(); searchPanel.Controls.Add(recommend);
-        var save = new Button { Text = "Lưu cấu hình", Width = 100 }; save.Click += (_, _) => SaveBuild(); searchPanel.Controls.Add(save);
-        var split = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Vertical, SplitterDistance = 520 };
-        split.Panel1.Controls.Add(_catalog); split.Panel2.Controls.Add(_selected);
-        var bottom = new Panel { Dock = DockStyle.Bottom, Height = 190 }; bottom.Controls.Add(_results); var totalPanel = new Panel { Dock = DockStyle.Top, Height = 30 }; totalPanel.Controls.Add(_total); bottom.Controls.Add(totalPanel);
-        Controls.Add(split); Controls.Add(bottom); Controls.Add(searchPanel); UiTheme.Apply(this); LoadCatalog(); RefreshBuild();
-    }
+    private readonly ComponentRepository _repo=new(); private readonly CompatibilityService _compat=new(); private readonly AppUser _user; private readonly RecommendationService _recommendation=new(); private readonly List<ComponentItem> _build=new();
+    public BuildForm():this(new AppUser(0,"designer","Designer","User"),true){}
+    public BuildForm(AppUser user):this(user,false){}
+    private BuildForm(AppUser user,bool designMode){_user=user;InitializeComponent();if(designMode)return;_purpose.Items.AddRange(new object[]{"Gaming","Lập trình/Đồ họa","Cân bằng"});_purpose.SelectedIndex=0;UiTheme.Apply(this);LoadCatalog();RefreshBuild();}
+    private void SearchClick(object? s,EventArgs e)=>LoadCatalog(); private void AddClick(object? s,EventArgs e)=>AddSelected(); private void RemoveClick(object? s,EventArgs e)=>RemoveSelected(); private void CheckClick(object? s,EventArgs e)=>Check(); private void RecommendClick(object? s,EventArgs e)=>Recommend(); private void SaveClick(object? s,EventArgs e)=>SaveBuild();
     private void LoadCatalog()
     {
         try { _catalog.DataSource = _repo.Search(_search.Text); foreach (var name in new[] { "CategoryID", "BrandID", "IsActive", "CategoryCode", "Socket", "MemoryType", "TDP_W", "PowerDraw_W", "Wattage_W", "LengthMM", "MaxGPULengthMM", "MaxCoolerHeightMM", "FormFactor", "CpuBenchmarkScore", "GpuBenchmarkScore" }) if (_catalog.Columns.Contains(name)) _catalog.Columns[name].Visible = false; }

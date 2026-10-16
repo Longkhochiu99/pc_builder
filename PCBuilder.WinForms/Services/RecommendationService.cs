@@ -67,7 +67,7 @@ public sealed class RecommendationService
         var ram = items.First(x => x.CategoryCode == "RAM");
         var storage = items.First(x => x.CategoryCode == "STORAGE");
         //var memoryBonus = Math.Min(1.15, 1.0 + Math.Max(0, ram.Price) / 100_000_000.0);
-        var memoryBonus = Math.Min(1.15,1.0 + Math.Max(0.0, (double)ram.Price) / 100_000_000.0);
+        var memoryBonus = Math.Min(1.15, 1.0 + Math.Max(0.0, (double)ram.Price) / 100_000_000.0);
         var storageBonus = storage.Price > 0 ? 1.03 : 1.0;
         var weighted = purpose switch
         {

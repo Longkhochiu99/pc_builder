@@ -14,4 +14,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Forms\LoginForm.Designer.cs"><DependentUpon>LoginForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\RegisterForm.Designer.cs"><DependentUpon>RegisterForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\MainForm.Designer.cs"><DependentUpon>MainForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\ComponentsForm.Designer.cs"><DependentUpon>ComponentsForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\ComponentEditForm.Designer.cs"><DependentUpon>ComponentEditForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\BuildForm.Designer.cs"><DependentUpon>BuildForm.cs</DependentUpon></Compile>
+    <Compile Update="Forms\TroubleshootingForm.Designer.cs"><DependentUpon>TroubleshootingForm.cs</DependentUpon></Compile>
+  </ItemGroup>
 </Project>
