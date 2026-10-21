@@ -17,9 +17,11 @@ public sealed class CompatibilityService
         var pcCase = items.FirstOrDefault(x => x.CategoryCode == "CASE");
         if (cpu is not null && board is not null)
         {
-            if (cpu.Socket is null || board.Socket is null) result.Add(new("Warning", "Thiếu dữ liệu socket CPU/Mainboard; chưa thể kết luận tương thích."));
-            else if (!cpu.Socket.Equals(board.Socket, StringComparison.OrdinalIgnoreCase)) result.Add(new("Error", $"Socket không khớp: CPU {cpu.Socket}, Mainboard {board.Socket}."));
-            else result.Add(new("Info", $"Socket CPU/Mainboard khớp ({cpu.Socket})."));
+            var cpuSocket = RecommendationService.ResolveSocket(cpu);
+            var boardSocket = RecommendationService.ResolveSocket(board);
+            if (cpuSocket is null || boardSocket is null) result.Add(new("Warning", "Thiếu dữ liệu socket CPU/Mainboard; chưa thể kết luận tương thích."));
+            else if (!cpuSocket.Equals(boardSocket, StringComparison.OrdinalIgnoreCase)) result.Add(new("Error", $"Socket không khớp: CPU {cpuSocket}, Mainboard {boardSocket}."));
+            else result.Add(new("Info", $"Socket CPU/Mainboard khớp ({cpuSocket})."));
         }
         if (ram is not null && board is not null)
         {

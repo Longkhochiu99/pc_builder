@@ -53,15 +53,23 @@ public sealed class ComponentRepository
         using var da = new SqlDataAdapter(cmd); var dt = new DataTable(); da.Fill(dt); return dt;
     }
 
-    private static ComponentItem Map(SqlDataReader r) => new()
+    private static ComponentItem Map(SqlDataReader r)
     {
-        ComponentID = Convert.ToInt32(r["ComponentID"]), CategoryID = Convert.ToInt32(r["CategoryID"]), CategoryName = Convert.ToString(r["CategoryName"]) ?? "",
-        CategoryCode = Convert.ToString(r["CategoryCode"]) ?? "", BrandID = Convert.ToInt32(r["BrandID"]), BrandName = Convert.ToString(r["BrandName"]) ?? "",
-        ModelName = Convert.ToString(r["ModelName"]) ?? "", SKU = r["SKU"] == DBNull.Value ? null : Convert.ToString(r["SKU"]), Price = Convert.ToDecimal(r["Price"]),
-        StockQuantity = Convert.ToInt32(r["StockQuantity"]), IsActive = Convert.ToBoolean(r["IsActive"]),
-        Socket = ValString(r,"Socket"), MemoryType = ValString(r,"MemoryType"), TdpW = ValInt(r,"TDP_W"), PowerDrawW = ValInt(r,"PowerDraw_W"), WattageW = ValInt(r,"Wattage_W"),
-        LengthMM = ValDecimal(r,"LengthMM"), MaxGpuLengthMM = ValDecimal(r,"MaxGPULengthMM"), MaxCoolerHeightMM = ValDecimal(r,"MaxCoolerHeightMM"), FormFactor = ValString(r,"FormFactor"), CpuBenchmarkScore = ValDecimal(r,"CpuBenchmarkScore"), GpuBenchmarkScore = ValDecimal(r,"GpuBenchmarkScore")
-    };
+        var item = new ComponentItem
+        {
+            ComponentID = Convert.ToInt32(r["ComponentID"]), CategoryID = Convert.ToInt32(r["CategoryID"]), CategoryName = Convert.ToString(r["CategoryName"]) ?? "",
+            CategoryCode = Convert.ToString(r["CategoryCode"]) ?? "", BrandID = Convert.ToInt32(r["BrandID"]), BrandName = Convert.ToString(r["BrandName"]) ?? "",
+            ModelName = Convert.ToString(r["ModelName"]) ?? "", SKU = r["SKU"] == DBNull.Value ? null : Convert.ToString(r["SKU"]), Price = Convert.ToDecimal(r["Price"]),
+            StockQuantity = Convert.ToInt32(r["StockQuantity"]), IsActive = Convert.ToBoolean(r["IsActive"]),
+            Socket = ValString(r,"Socket"), MemoryType = ValString(r,"MemoryType"), TdpW = ValInt(r,"TDP_W"), PowerDrawW = ValInt(r,"PowerDraw_W"), WattageW = ValInt(r,"Wattage_W"),
+            LengthMM = ValDecimal(r,"LengthMM"), MaxGpuLengthMM = ValDecimal(r,"MaxGPULengthMM"), MaxCoolerHeightMM = ValDecimal(r,"MaxCoolerHeightMM"), FormFactor = ValString(r,"FormFactor"), CpuBenchmarkScore = ValDecimal(r,"CpuBenchmarkScore"), GpuBenchmarkScore = ValDecimal(r,"GpuBenchmarkScore")
+        };
+        if (string.IsNullOrWhiteSpace(item.Socket))
+        {
+            item.Socket = PCBuilder.Services.RecommendationService.ResolveSocket(item);
+        }
+        return item;
+    }
     private static string? ValString(SqlDataReader r,string n) => r[n] == DBNull.Value ? null : Convert.ToString(r[n]);
     private static int? ValInt(SqlDataReader r,string n) => r[n] == DBNull.Value ? null : Convert.ToInt32(r[n]);
     private static decimal? ValDecimal(SqlDataReader r,string n) => r[n] == DBNull.Value ? null : Convert.ToDecimal(r[n]);

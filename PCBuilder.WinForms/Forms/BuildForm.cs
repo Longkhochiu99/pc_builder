@@ -59,4 +59,17 @@ public sealed partial class BuildForm : Form
         var cpu = _build.FirstOrDefault(x => x.CategoryCode == "CPU"); var gpu = _build.FirstOrDefault(x => x.CategoryCode == "GPU");
         _results.AppendText("\n" + _compat.EstimateBottleneck(cpu, gpu));
     }
+    private void Form_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        DialogResult dialog = MessageBox.Show("Bạn có chắc chắn muốn thoát chương trình ?", "Warning", MessageBoxButtons.YesNo);
+        if (dialog == DialogResult.Yes)
+        {
+
+        }
+        else
+        {
+            e.Cancel = true;
+        }
+    }
+
 }
